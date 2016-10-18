@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="neder.trackeragent.MainActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Latitude:"
+        android:id="@+id/latituteLabel"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginTop="20dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Longitude:"
+        android:id="@+id/longitudeLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/latituteLabel"
+        android:layout_alignParentLeft="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Altitude:"
+        android:id="@+id/altitudeLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/longitudeLabel"
+        android:layout_alignParentLeft="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Accuracy:"
+        android:id="@+id/accuracyLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/altitudeLabel"
+        android:layout_alignParentLeft="true" />
+
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bearing:"
+        android:id="@+id/bearingLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/accuracyLabel"
+        android:layout_alignParentLeft="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Velocidade:"
+        android:id="@+id/speedLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/bearingLabel"
+        android:layout_alignParentLeft="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Horario:"
+        android:id="@+id/timeLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/speedLabel"
+        android:layout_alignParentLeft="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Provedor:"
+        android:id="@+id/providerLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/timeLabel"
+        android:layout_alignParentLeft="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Atualizações:"
+        android:id="@+id/locationUpdateCountLabel"
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/providerLabel"
+        android:layout_alignParentLeft="true" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="LO"
+        android:id="@+id/latitudeValue"
+        android:layout_alignBaseline="@+id/longitudeLabel"
+        android:layout_alignBottom="@+id/longitudeLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="LA"
+        android:id="@+id/longitudeValue"
+        android:layout_alignBaseline="@+id/latituteLabel"
+        android:layout_alignBottom="@+id/latituteLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AA"
+        android:id="@+id/altitudeValue"
+        android:layout_alignBaseline="@+id/altitudeLabel"
+        android:layout_alignBottom="@+id/altitudeLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AC"
+        android:id="@+id/accuracyValue"
+        android:layout_alignBaseline="@+id/accuracyLabel"
+        android:layout_alignBottom="@+id/accuracyLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AC"
+        android:id="@+id/bearingValue"
+        android:layout_alignBaseline="@+id/bearingLabel"
+        android:layout_alignBottom="@+id/bearingLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SS"
+        android:id="@+id/speedValue"
+        android:layout_alignBaseline="@+id/speedLabel"
+        android:layout_alignBottom="@+id/speedLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="HH"
+        android:id="@+id/timeValue"
+        android:layout_alignBaseline="@+id/timeLabel"
+        android:layout_alignBottom="@+id/timeLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PR"
+        android:id="@+id/providerValue"
+        android:layout_alignBaseline="@+id/providerLabel"
+        android:layout_alignBottom="@+id/providerLabel"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AT"
+        android:id="@+id/locationUpdateCountValue"
+        android:layout_alignBaseline="@+id/locationUpdateCountLabel"
+        android:layout_alignBottom="@+id/locationUpdateCountLabel"
+        android:layout_alignParentRight="true" />
+
+</RelativeLayout>

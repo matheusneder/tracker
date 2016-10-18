@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TrackerAgent</string>
+    <string name="LocationNullException">Não foi possível obter a sua localização atual, verifique se o GPS está habilitado.</string>
+    <string name="GpsDisabledDialogTitle">GPS desabilitado</string>
+    <string name="GpsNotEnabledException">O GPS não está habilitado.</string>
+    <string name="NetworkNotEnabledException">Localização por rede está desabilitada.</string>
+    <string name="tooMuchTransmitFailsException">Houveram muitas tentativas de trasmitir pacotes sem sucesso.</string>
+</resources>
