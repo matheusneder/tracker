@@ -18,10 +18,10 @@ import neder.location.exception.NetworkNotEnabledException;
 
 public class LocationService implements LocationListener {
 
-    private static final long GPS_MIN_TIME = 1000;
-    private static final float GPS_MIN_DISTANCE = 0.1F;
-    private static final long NETWORK_MIN_TIME = 10000;
-    private static final float NETWORK_MIN_DISTANCE = 1.0F;
+    private static final long GPS_MIN_TIME = 5000;
+    private static final float GPS_MIN_DISTANCE = 5F;
+    private static final long NETWORK_MIN_TIME = 50000;
+    private static final float NETWORK_MIN_DISTANCE = 50F;
 
     // se receber update por network e o gps estiver sem resposta por tempo > q o definido nesta
     // constante (em milliseconds), atualiza com a localizacao do NETWORK
@@ -69,8 +69,8 @@ public class LocationService implements LocationListener {
         boolean acceptNewLocation = false;
         // possuo uma localizacao anterior proveniente do gps (guardada em this.location) e
         // estou recebendo uma nova localizacao por rede
-        if(this.location != null && this.location.getProvider() == LocationManager.GPS_PROVIDER &&
-                location.getProvider() == LocationManager.NETWORK_PROVIDER)
+        if(this.location != null && this.location.getProvider().equals(LocationManager.GPS_PROVIDER) &&
+                location.getProvider().equals(LocationManager.NETWORK_PROVIDER))
         {
             // a localizacao por rede sera aceita (e atualizada) somente se o momento da utltima
             // atualizacao tiver sido a mais do que UPDATE_WITH_NETWORK_GPS_TIMEOUT atras

@@ -15,6 +15,10 @@ public class ApplicationException extends Exception {
         this.messageCode = messageCode;
     }
 
+    public ApplicationException(int messageCode, Throwable cause) {
+        super(cause);
+    }
+
     public String getMessageFromResource(Context context) {
         return  context.getString(messageCode);
     }

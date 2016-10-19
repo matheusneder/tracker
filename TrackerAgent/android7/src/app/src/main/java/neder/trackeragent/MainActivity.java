@@ -20,11 +20,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
 
+import neder.device.DeviceInfo;
 import neder.location.ILocationChangeListener;
 import neder.location.LocationConverter;
 import neder.location.LocationDTO;
+import neder.location.LocationPackageDTO;
 import neder.location.exception.LocationException;
 import neder.location.LocationService;
+import neder.net.firebase.FirebaseClient;
+import neder.net.firebase.exception.FirebaseClientException;
 import neder.transmition.exception.TooMuchTransmitFailsException;
 
 import static neder.location.LocationConverter.toLocationDTO;
@@ -202,9 +206,9 @@ public class MainActivity extends Activity {
     private Random randomGeneratorForPackageIds = new Random();
 
     private String generateSequentialUniqueId() {
-        String time = String.format("%08X", System.currentTimeMillis());
-        String seq  = String.format("%04X", sequenceForPackageIds++);
-        String rand = String.format("%04X", randomGeneratorForPackageIds.nextInt());
+        String time = String.format("%016X", System.currentTimeMillis());
+        String seq  = String.format("%08X", sequenceForPackageIds++);
+        String rand = String.format("%08X", randomGeneratorForPackageIds.nextInt());
         return time + "-" + seq + "-" + rand;
     }
 
@@ -218,19 +222,21 @@ public class MainActivity extends Activity {
         SQLiteDatabase db = getDatabase();
         SQLiteStatement stmt = db.compileStatement("INSERT INTO Packages(id, data, sent) VALUES (?, ? , 0)");
         stmt.bindString(1, id);
-        stmt.bindString(2, LocationConverter.toJSON(location));
+        LocationDTO locationDTO = toLocationDTO(location);
+        locationDTO.provider = String.format("stored:%s", locationDTO.provider);
+        stmt.bindString(2, LocationConverter.toJSON(locationDTO));
         stmt.execute();
         db.close();
         return id;
     }
 
     private void tryTransmitLocationPackage(String id, Location location) {
-        tryTransmitLocationPackage(id, LocationConverter.toJSON(location));
+        tryTransmitLocationPackage(id, toLocationDTO(location));
     }
 
     int tryTransmitLocationPackageFailCount = 0;
 
-    private void tryTransmitLocationPackage(String id, String data){
+    private void tryTransmitLocationPackage(String id, LocationDTO data){
         if(tryTransmitLocationPackageFailCount < TRASMIT_FAILS_TO_STOP) {
             if (doTheTransmitionOfLocationPackageThroughCloud(id, data)) {
                 tryTransmitLocationPackageFailCount = 0;
@@ -303,7 +309,8 @@ public class MainActivity extends Activity {
             if (resultSet.moveToFirst()) {
                 do {
                     String id = resultSet.getString(resultSet.getColumnIndex("id"));
-                    String data = resultSet.getString(resultSet.getColumnIndex("data"));
+                    String jsonData = resultSet.getString(resultSet.getColumnIndex("data"));
+                    LocationDTO data = LocationConverter.fromJSON(jsonData);
                     tryTransmitLocationPackage(id, data);
                 }
                 while (resultSet.moveToNext());
@@ -314,8 +321,20 @@ public class MainActivity extends Activity {
         }
     }
 
-    private boolean doTheTransmitionOfLocationPackageThroughCloud(String id, String data) {
-        return true;
+    private boolean doTheTransmitionOfLocationPackageThroughCloud(String id, LocationDTO data) {
+
+        try {
+            DeviceInfo deviceInfo = new DeviceInfo(this);
+            LocationPackageDTO locationPackage = new LocationPackageDTO(id, data);
+            FirebaseClient client = new FirebaseClient("https://tracker-d7ad1.firebaseio.com");
+            String deviceIdPathSegment = (deviceInfo.getDeviceName() + "-" + deviceInfo.getDeviceId()).replaceAll("[^a-zA-Z0-9_-]", "");
+            client.push("/tracked-devices/" + deviceIdPathSegment + "/tracks", locationPackage);
+            return true;
+        }catch(FirebaseClientException e) {
+            Log.e("MainActivity", "FirebaseClientException thrown");
+            Log.getStackTraceString(e);
+            return false;
+        }
     }
 
     public void showGpsDisabledAlert(String message) {

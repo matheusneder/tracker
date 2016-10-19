@@ -5,4 +5,5 @@
     <string name="GpsNotEnabledException">O GPS não está habilitado.</string>
     <string name="NetworkNotEnabledException">Localização por rede está desabilitada.</string>
     <string name="tooMuchTransmitFailsException">Houveram muitas tentativas de trasmitir pacotes sem sucesso.</string>
+    <string name="firebasePushException">Firebase push exception</string>
 </resources>
