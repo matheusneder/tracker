@@ -5,7 +5,7 @@ import android.os.Build;
 import android.provider.Settings;
 
 import java.security.AccessController;
-// teste commit
+
 /**
  * Created by Matheus on 18/10/2016.
  */
