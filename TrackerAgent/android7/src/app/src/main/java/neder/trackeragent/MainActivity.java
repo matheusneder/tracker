@@ -245,8 +245,7 @@ public class MainActivity extends Activity {
                 SQLiteStatement stmt = db.compileStatement("UPDATE Packages SET sent = 1 WHERE id = ?");
                 stmt.bindString(1, id);
                 stmt.execute();
-                // nao fecho a conexao pq este metodo eh chamada em uma estrutura de repeticao
-                // q tem a conexao aberta
+                db.close();
             } else {
                 tryTransmitLocationPackageFailCount++;
                 Log.e("MainActivity", "Fail to trasmit #" + tryTransmitLocationPackageFailCount);
