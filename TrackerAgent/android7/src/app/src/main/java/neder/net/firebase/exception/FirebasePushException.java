@@ -9,6 +9,6 @@ import neder.trackeragent.R;
 
 public class FirebasePushException extends FirebaseClientException {
     public FirebasePushException(Throwable cause) {
-        super(R.string.firebasePushException, cause);
+        super("FIREBASE_PUSH_ERROR", cause);
     }
 }

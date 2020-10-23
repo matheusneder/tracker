@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.Random;
 
 import neder.device.DeviceInfo;
-import neder.location.ILocationChangeListener;
+import neder.location.LocationChangeListener;
 import neder.location.LocationConverter;
 import neder.location.LocationDTO;
 import neder.location.LocationPackageDTO;
@@ -29,7 +29,6 @@ import neder.location.exception.LocationException;
 import neder.location.LocationService;
 import neder.net.firebase.FirebaseClient;
 import neder.net.firebase.exception.FirebaseClientException;
-import neder.transmition.exception.TooMuchTransmitFailsException;
 
 import static neder.location.LocationConverter.toLocationDTO;
 
@@ -81,7 +80,7 @@ public class MainActivity extends Activity {
 //                handleNewLocation(currentLocation);
 //            }
             wakeup();
-            locationService.addLocationChangeListener(new ILocationChangeListener() {
+            locationService.addLocationChangeListener(new LocationChangeListener() {
                 @Override
                 public void onLocationChanged(Location location) {
                     handleNewLocation(location);
@@ -91,7 +90,7 @@ public class MainActivity extends Activity {
             //startOldMessageLoop();
 
         } catch (LocationException e) {
-            showGpsDisabledAlert(e.getMessageFromResource(this));
+            //showGpsDisabledAlert(e.getMessageFromResource(this));
             e.printStackTrace();
         }
     }
@@ -325,7 +324,14 @@ public class MainActivity extends Activity {
         try {
             DeviceInfo deviceInfo = new DeviceInfo(this);
             LocationPackageDTO locationPackage = new LocationPackageDTO(id, data);
-            FirebaseClient client = new FirebaseClient("https://tracker-d7ad1.firebaseio.com");
+            String fbServiceUrl = getResources().getString(R.string.default_fb_account_service_url);
+
+            if(fbServiceUrl == null || !fbServiceUrl.matches("^https://.*\\.firebaseio\\.com/?$"))
+            {
+                throw new RuntimeException("Cannot read default_fb_account_service_url resource value or its value dont match regex ^https://.*\\.firebaseio\\.com/?$. Look for local.properties.");
+            }
+
+            FirebaseClient client = new FirebaseClient(fbServiceUrl);
             String deviceIdPathSegment = (deviceInfo.getDeviceName() + "-" + deviceInfo.getDeviceId()).replaceAll("[^a-zA-Z0-9_-]", "");
             client.push("/tracked-devices/" + deviceIdPathSegment + "/tracks", locationPackage);
             return true;

@@ -7,7 +7,7 @@ import neder.exception.ApplicationException;
  */
 
 public abstract class LocationException extends ApplicationException {
-    public LocationException(int messageCode) {
-        super(messageCode);
+    public LocationException(String errorCode) {
+        super(errorCode);
     }
 }

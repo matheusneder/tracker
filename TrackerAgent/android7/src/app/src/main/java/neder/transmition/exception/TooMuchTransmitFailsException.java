@@ -9,6 +9,6 @@ import neder.trackeragent.R;
 
 public class TooMuchTransmitFailsException extends ApplicationException {
     public TooMuchTransmitFailsException() {
-        super(R.string.tooMuchTransmitFailsException);
+        super("tooMuchTransmitFails");
     }
 }

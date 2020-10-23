@@ -8,22 +8,19 @@ import android.content.Context;
 
 public class ApplicationException extends Exception {
 
-    private int messageCode;
+    private String errorCode;
 
-    public ApplicationException(int messageCode) {
+    public ApplicationException(String errorCode) {
         super();
-        this.messageCode = messageCode;
+        this.errorCode = errorCode;
     }
 
-    public ApplicationException(int messageCode, Throwable cause) {
+    public ApplicationException(String errorCode, Throwable cause) {
         super(cause);
+        this.errorCode = errorCode;
     }
 
-    public String getMessageFromResource(Context context) {
-        return  context.getString(messageCode);
-    }
-
-    public int getMessageCode() {
-        return messageCode;
+    public String getErrorCode() {
+        return errorCode;
     }
 }
