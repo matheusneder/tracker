@@ -9,7 +9,9 @@ public class LocationPackageDTO {
         this.id = id;
         this.location = location;
     }
-    
+
+    public LocationPackageDTO() { }
+
     public String id;
     public LocationDTO location;
 }

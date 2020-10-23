@@ -3,6 +3,10 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 7
     buildToolsVersion '25.0.0'
+
+    def Properties properties = new Properties()
+    properties.load(project.rootProject.file("local.properties").newDataInputStream())
+
     defaultConfig {
         applicationId "neder.trackeragent"
         minSdkVersion 7
@@ -13,6 +17,7 @@ android {
         jackOptions {
             enabled false
         }
+        resValue "string", "default_fb_account_service_url", properties.getProperty("default.fb_account.service_url", "")
     }
     buildTypes {
         release {

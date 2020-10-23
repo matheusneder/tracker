@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "999999999999",
+    "firebase_url": "https://XXXXXXX-XXXXX.firebaseio.com",
+    "project_id": "XXXXXXX-XXXXX",
+    "storage_bucket": "XXXXXXX-XXXXX.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:999999999999:android:ffffffffffffffffffffff",
+        "android_client_info": {
+          "package_name": "neder.trackerclient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "999999999999-hg7yjn4iHokd34234i6ma7pekkdji545.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "JisiHjqiw-Kq23Vk79-9yJne8WfnqJJ27fAUbj2"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "999999999999-hg7yjn4iHokd34234i6ma7pekkdji545.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

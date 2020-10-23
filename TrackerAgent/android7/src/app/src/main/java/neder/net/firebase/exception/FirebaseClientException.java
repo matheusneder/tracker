@@ -8,11 +8,11 @@ import neder.exception.ApplicationException;
 
 public class FirebaseClientException extends ApplicationException {
 
-    public FirebaseClientException(int messageCode) {
-        super(messageCode);
+    public FirebaseClientException(String errorCode) {
+        super(errorCode);
     }
 
-    public FirebaseClientException(int messageCode, Throwable cause) {
-        super(messageCode, cause);
+    public FirebaseClientException(String errorCode, Throwable cause) {
+        super(errorCode, cause);
     }
 }

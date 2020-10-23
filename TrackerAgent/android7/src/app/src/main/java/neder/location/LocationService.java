@@ -30,7 +30,7 @@ public class LocationService implements LocationListener {
     private Context context;
     private LocationManager locationManager;
     private Location location;
-    private ArrayList<ILocationChangeListener> locationChangeListeners = new ArrayList<ILocationChangeListener>();
+    private ArrayList<LocationChangeListener> locationChangeListeners = new ArrayList<LocationChangeListener>();
 
     public Location getCurrentLocation() {
         return location;
@@ -54,12 +54,12 @@ public class LocationService implements LocationListener {
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, NETWORK_MIN_TIME, NETWORK_MIN_DISTANCE, this);
     }
 
-    public ILocationChangeListener addLocationChangeListener(ILocationChangeListener listener) {
+    public LocationChangeListener addLocationChangeListener(LocationChangeListener listener) {
         locationChangeListeners.add(listener);
         return listener;
     }
 
-    public boolean RemoveLocationChangeListener(ILocationChangeListener listener){
+    public boolean RemoveLocationChangeListener(LocationChangeListener listener){
         return locationChangeListeners.remove(listener);
     }
 
@@ -82,7 +82,7 @@ public class LocationService implements LocationListener {
         }
         if(acceptNewLocation) {
             this.location = location;
-            for (ILocationChangeListener listener : locationChangeListeners) {
+            for (LocationChangeListener listener : locationChangeListeners) {
                 listener.onLocationChanged(location);
             }
         }
