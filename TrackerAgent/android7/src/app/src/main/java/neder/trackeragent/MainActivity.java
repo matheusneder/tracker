@@ -19,12 +19,15 @@ import android.widget.TextView;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import neder.device.DeviceInfo;
 import neder.location.LocationChangeListener;
 import neder.location.LocationConverter;
 import neder.location.LocationDTO;
 import neder.location.LocationPackageDTO;
+import neder.location.SharedConstants;
 import neder.location.exception.LocationException;
 import neder.location.LocationService;
 import neder.net.firebase.FirebaseClient;
@@ -87,11 +90,9 @@ public class MainActivity extends Activity {
                 }
             });
 
-            //startOldMessageLoop();
-
         } catch (LocationException e) {
-            //showGpsDisabledAlert(e.getMessageFromResource(this));
-            e.printStackTrace();
+            showGpsDisabledAlert(e.getErrorCode());
+            Log.e("Inicializacao", "LocationException ao inicializar", e);
         }
     }
 
@@ -121,10 +122,6 @@ public class MainActivity extends Activity {
             Log.e("MainActivity", "Calling wakeup with illegal oldMessageLoopState: " + oldMessageLoopState.toString());
         }
     }
-
-//    private void startOldMessageLoop() {
-//        startOldMessageLoop(false);
-//    }
 
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager
@@ -181,12 +178,40 @@ public class MainActivity extends Activity {
         }
     }
 
+    private Timer parkNotificationTimer = new Timer();
+    private final Object lockPad = new Object();
+
     private void handleNewLocation(Location location) {
-        locationUpdateCount++;
-        locationUpdatesView.setText(Long.toString(locationUpdateCount));
-        updateLocationView(toLocationDTO(location));
-        String packageId = storeLocation(location);
-        tryTransmitLocationPackage(packageId, location);
+        synchronized (lockPad) {
+            parkNotificationTimer.cancel();
+            parkNotificationTimer = new Timer();
+
+            locationUpdateCount++;
+            locationUpdatesView.setText(Long.toString(locationUpdateCount));
+            final LocationDTO locationDTO = toLocationDTO(location);
+            storeAndTryTransmitLocationPackage(locationDTO);
+            updateLocationView(locationDTO);
+            parkNotificationTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (lockPad) {
+                        Log.v("handleNewLocation:timer", "parkNotificationTimer fired!");
+                        LocationDTO parkedLocationDTO = locationDTO.clone();
+                        parkedLocationDTO.parked = true;
+                        parkedLocationDTO.originSpeed = locationDTO.speed;
+                        parkedLocationDTO.speed = 0.0F;
+                        parkedLocationDTO.originTime = locationDTO.time;
+                        parkedLocationDTO.time = System.currentTimeMillis();
+                        storeAndTryTransmitLocationPackage(parkedLocationDTO);
+                    }
+                }
+            }, SharedConstants.PARKED_TIMER_DELAY);
+        }
+    }
+
+    private void storeAndTryTransmitLocationPackage(LocationDTO locationDTO) {
+        String packageId = storeLocation(locationDTO);
+        tryTransmitLocationPackage(packageId, locationDTO);
     }
 
     private SQLiteDatabase db;
@@ -213,24 +238,20 @@ public class MainActivity extends Activity {
 
     /**
      *
-     * @param location
+     * @param locationDTO
      * @return the unique identifier
      */
-    private String storeLocation(Location location) {
+    private String storeLocation(LocationDTO locationDTO) {
         String id = generateSequentialUniqueId();
+        LocationDTO storedLocationDTO = locationDTO.clone();
         SQLiteDatabase db = getDatabase();
         SQLiteStatement stmt = db.compileStatement("INSERT INTO Packages(id, data, sent) VALUES (?, ? , 0)");
         stmt.bindString(1, id);
-        LocationDTO locationDTO = toLocationDTO(location);
-        locationDTO.provider = String.format("stored:%s", locationDTO.provider);
-        stmt.bindString(2, LocationConverter.toJSON(locationDTO));
+        storedLocationDTO.provider = String.format("stored:%s", locationDTO.provider);
+        stmt.bindString(2, LocationConverter.toJSON(storedLocationDTO));
         stmt.execute();
         db.close();
         return id;
-    }
-
-    private void tryTransmitLocationPackage(String id, Location location) {
-        tryTransmitLocationPackage(id, toLocationDTO(location));
     }
 
     int tryTransmitLocationPackageFailCount = 0;
@@ -296,7 +317,6 @@ public class MainActivity extends Activity {
         Log.v("MainActivity", "transmitOldStoredLocations called");
         if(tryTransmitLocationPackageFailCount >= TRASMIT_FAILS_TO_STOP) {
             Log.e("MainActivity", "transmitOldStoredLocations, tryTransmitLocationPackageFailCount = " + tryTransmitLocationPackageFailCount);
-            //throw new TooMuchTransmitFailsException();
             SwitchToCantTransmitPackagesState();
         } else {
             SQLiteDatabase db = getDatabase();
@@ -314,7 +334,11 @@ public class MainActivity extends Activity {
                 while (resultSet.moveToNext());
             }
             resultSet.close();
-            db.execSQL("DELETE FROM Packages WHERE sent = 1"); // limpa (localmente) os pacotes enviados
+            try {
+                db.execSQL("DELETE FROM Packages WHERE sent = 1"); // limpa (localmente) os pacotes enviados
+            }catch (IllegalStateException e){
+                Log.v("transmitOldStoredLoc", "DELETE old packages thrown IllegalStateException :/", e);
+            }
             db.close();
         }
     }

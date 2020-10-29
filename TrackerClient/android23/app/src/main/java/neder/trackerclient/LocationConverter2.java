@@ -42,6 +42,8 @@ public class LocationConverter2 {
                 return LocationProvider.NETWORK;
             case "stored:gps":
                 return LocationProvider.STORED_GPS;
+            case "stored:network":
+                return LocationProvider.STORED_NETWORK;
             default:
                 throw new LocationProviderNotMappedException(provider);
         }
@@ -55,6 +57,8 @@ public class LocationConverter2 {
                 return "network";
             case STORED_GPS:
                 return "stored:gps";
+            case STORED_NETWORK:
+                return "stored:network";
             default:
                 throw new RuntimeException("Invalid LocationProvider");
         }

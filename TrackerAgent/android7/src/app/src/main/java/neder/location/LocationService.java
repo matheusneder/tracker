@@ -18,7 +18,7 @@ import neder.location.exception.NetworkNotEnabledException;
 
 public class LocationService implements LocationListener {
 
-    private static final long GPS_MIN_TIME = 5000;
+    private static final long GPS_MIN_TIME = SharedConstants.GPS_MIN_TIME;
     private static final float GPS_MIN_DISTANCE = 5F;
     private static final long NETWORK_MIN_TIME = 50000;
     private static final float NETWORK_MIN_DISTANCE = 50F;
@@ -41,7 +41,7 @@ public class LocationService implements LocationListener {
         locationManager = (LocationManager) context
                 .getSystemService(Context.LOCATION_SERVICE);
         if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            //throw new GpsNotEnabledException();
+            throw new GpsNotEnabledException();
         }
         if(!locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
             //throw new NetworkNotEnabledException();
