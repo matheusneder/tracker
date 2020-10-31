@@ -205,7 +205,7 @@ public class MainActivity extends Activity {
                         storeAndTryTransmitLocationPackage(parkedLocationDTO);
                     }
                 }
-            }, SharedConstants.PARKED_TIMER_DELAY);
+            }, SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
         }
     }
 
