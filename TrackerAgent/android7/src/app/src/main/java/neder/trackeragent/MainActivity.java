@@ -236,6 +236,8 @@ public class MainActivity extends Activity {
         return time + "-" + seq + "-" + rand;
     }
 
+    private Object dbLockPad = new Object();
+
     /**
      *
      * @param locationDTO
@@ -244,13 +246,15 @@ public class MainActivity extends Activity {
     private String storeLocation(LocationDTO locationDTO) {
         String id = generateSequentialUniqueId();
         LocationDTO storedLocationDTO = locationDTO.clone();
-        SQLiteDatabase db = getDatabase();
-        SQLiteStatement stmt = db.compileStatement("INSERT INTO Packages(id, data, sent) VALUES (?, ? , 0)");
-        stmt.bindString(1, id);
-        storedLocationDTO.provider = String.format("stored:%s", locationDTO.provider);
-        stmt.bindString(2, LocationConverter.toJSON(storedLocationDTO));
-        stmt.execute();
-        db.close();
+        synchronized (dbLockPad) {
+            SQLiteDatabase db = getDatabase();
+            SQLiteStatement stmt = db.compileStatement("INSERT INTO Packages(id, data, sent) VALUES (?, ? , 0)");
+            stmt.bindString(1, id);
+            storedLocationDTO.provider = String.format("stored:%s", locationDTO.provider);
+            stmt.bindString(2, LocationConverter.toJSON(storedLocationDTO));
+            stmt.execute();
+            db.close();
+        }
         return id;
     }
 
@@ -260,12 +264,14 @@ public class MainActivity extends Activity {
         if(tryTransmitLocationPackageFailCount < TRASMIT_FAILS_TO_STOP) {
             if (doTheTransmitionOfLocationPackageThroughCloud(id, data)) {
                 tryTransmitLocationPackageFailCount = 0;
-                // marca o pacote como enviado no controle local
-                SQLiteDatabase db = getDatabase();
-                SQLiteStatement stmt = db.compileStatement("UPDATE Packages SET sent = 1 WHERE id = ?");
-                stmt.bindString(1, id);
-                stmt.execute();
-                db.close();
+                synchronized (dbLockPad) {
+                    // marca o pacote como enviado no controle local
+                    SQLiteDatabase db = getDatabase();
+                    SQLiteStatement stmt = db.compileStatement("UPDATE Packages SET sent = 1 WHERE id = ?");
+                    stmt.bindString(1, id);
+                    stmt.execute();
+                    db.close();
+                }
             } else {
                 tryTransmitLocationPackageFailCount++;
                 Log.e("MainActivity", "Fail to trasmit #" + tryTransmitLocationPackageFailCount);
@@ -319,8 +325,9 @@ public class MainActivity extends Activity {
             Log.e("MainActivity", "transmitOldStoredLocations, tryTransmitLocationPackageFailCount = " + tryTransmitLocationPackageFailCount);
             SwitchToCantTransmitPackagesState();
         } else {
-            SQLiteDatabase db = getDatabase();
-            try {
+            synchronized (dbLockPad) {
+                SQLiteDatabase db = getDatabase();
+                //try {
                 // pega do mais recente para o mais antigo
                 Cursor resultSet = db.rawQuery(
                         "SELECT id, data FROM Packages WHERE sent = 0 ORDER BY id DESC LIMIT " +
@@ -337,10 +344,11 @@ public class MainActivity extends Activity {
                 resultSet.close();
 
                 db.execSQL("DELETE FROM Packages WHERE sent = 1"); // limpa (localmente) os pacotes enviados
-            }catch (IllegalStateException e){
-                Log.v("transmitOldStoredLoc", "transmitOldStoredLocations thrown IllegalStateException :/", e);
+                //}catch (IllegalStateException e){
+                //    Log.v("transmitOldStoredLoc", "transmitOldStoredLocations thrown IllegalStateException :/", e);
+                //}
+                db.close();
             }
-            db.close();
         }
     }
 
