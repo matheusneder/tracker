@@ -31,6 +31,7 @@ public class LocationConverter2 {
         locationModel.provider = toLocationProvider(locationDTO.provider);
         locationModel.speed = locationDTO.speed;
         locationModel.time = new Date(locationDTO.time);
+        locationModel.parked = locationDTO.parked;
         return locationModel;
     }
 

@@ -30,7 +30,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="100dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="@+id/agentLatitudeValue"
         app:layout_constraintTop_toBottomOf="@+id/agentLabel" />
@@ -40,7 +40,7 @@
         android:layout_width="41dp"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Time"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentCoordLabel" />
@@ -49,7 +49,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="n/a"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentLongitudeValue" />
@@ -59,7 +59,7 @@
         android:layout_width="40dp"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Speed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentTimeLabel" />
@@ -68,7 +68,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentTimeValue" />
@@ -78,7 +78,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Accuracy"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentSpeedLabel" />
@@ -87,36 +87,55 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentSpeedValue" />
+
+    <TextView
+        android:id="@+id/agentParkedLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_marginStart="44dp"
+        android:layout_marginTop="8dp"
+        android:text="Parked"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/agentAccuracyLabel" />
+    <TextView
+        android:id="@+id/agentParkedValue"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="8dp"
+        android:text="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/agentAccuracyValue" />
 
     <TextView
         android:id="@+id/agentBearingLabel"
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Bearing"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/agentAccuracyLabel" />
+        app:layout_constraintTop_toBottomOf="@+id/agentParkedLabel" />
     <TextView
         android:id="@+id/agentBearingValue"
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/agentAccuracyValue" />
+        app:layout_constraintTop_toBottomOf="@+id/agentParkedValue" />
 
     <TextView
         android:id="@+id/agentProviderLabel"
         android:layout_width="53dp"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Provider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentBearingLabel" />
@@ -125,7 +144,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="n/a"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/agentBearingValue" />
@@ -153,7 +172,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="100dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="@+id/deviceLatitudeValue"
         app:layout_constraintTop_toBottomOf="@+id/deviceLabel" />
@@ -163,7 +182,7 @@
         android:layout_width="41dp"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Time"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceCoordLabel" />
@@ -172,7 +191,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="n/a"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceLongitudeValue" />
@@ -182,7 +201,7 @@
         android:layout_width="40dp"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Speed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceTimeLabel" />
@@ -191,7 +210,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceTimeValue" />
@@ -201,7 +220,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Accuracy"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceSpeedLabel" />
@@ -210,7 +229,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceSpeedValue" />
@@ -220,7 +239,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Bearing"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceAccuracyLabel" />
@@ -229,7 +248,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="0.000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceAccuracyValue" />
@@ -239,7 +258,7 @@
         android:layout_width="53dp"
         android:layout_height="20dp"
         android:layout_marginStart="44dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Provider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceBearingLabel" />
@@ -248,7 +267,7 @@
         android:layout_width="wrap_content"
         android:layout_height="20dp"
         android:layout_marginStart="140dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="n/a"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/deviceBearingValue" />
@@ -260,7 +279,7 @@
         android:layout_width="wrap_content"
         android:layout_height="29dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="Agent"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
@@ -326,4 +345,51 @@
         app:layout_constraintTop_toBottomOf="@+id/distanceValue"
         tools:layout_editor_absoluteY="405dp" />
 
+    <TextView
+        android:id="@+id/compensationLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="29dp"
+        android:layout_marginStart="20dp"
+        android:text="Comp"
+        android:layout_marginTop="12dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/lagLabel"
+        tools:layout_editor_absoluteY="405dp" />
+
+    <TextView
+        android:id="@+id/compensationValue"
+        android:layout_width="wrap_content"
+        android:layout_height="29dp"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="12dp"
+        android:text="0.000"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/lagValue"
+        tools:layout_editor_absoluteY="405dp" />
+
+    <TextView
+        android:id="@+id/compensatedDistanceLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="29dp"
+        android:layout_marginStart="20dp"
+        android:text="CompDist"
+        android:layout_marginTop="12dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/compensationLabel"
+        tools:layout_editor_absoluteY="405dp" />
+
+    <TextView
+        android:id="@+id/compensatedDistanceValue"
+        android:layout_width="wrap_content"
+        android:layout_height="29dp"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="12dp"
+        android:text="0.000"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/compensationValue"
+        tools:layout_editor_absoluteY="405dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -12,4 +12,5 @@ public class LocationModel {
     public Date time = null;
     public LocationProvider provider = null;
     public String id;
+    public boolean parked = false;
 }

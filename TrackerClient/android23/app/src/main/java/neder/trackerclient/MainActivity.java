@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView agentSpeedView;
     private TextView agentProviderView;
     private TextView agentAccuracyView;
+    private TextView agentParkedView;
     private TextView agentBearingView;
 
     private TextView deviceLatitudeView;
@@ -43,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView distanceView;
     private TextView lagView;
+    private TextView compensationView;
+    private TextView compensatedDistanceView;
 
     private Location deviceLocation = null;
 
@@ -62,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
 //                handleNewLocation(currentLocation);
 //            }
             //wakeup();
+
+            deviceLocation = locationService.getCurrentLocation();
+
             locationService.addLocationChangeListener(new LocationChangeListener() {
                 @Override
                 public void onLocationChanged(Location location) {
@@ -86,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
         agentSpeedView = (TextView)findViewById(R.id.agentSpeedValue);
         agentProviderView = (TextView)findViewById(R.id.agentProviderValue);
         agentAccuracyView = (TextView)findViewById(R.id.agentAccuracyValue);
+        agentParkedView = (TextView)findViewById(R.id.agentParkedValue);
         agentBearingView = (TextView)findViewById(R.id.agentBearingValue);
 
         deviceLatitudeView = (TextView)findViewById(R.id.deviceLatitudeValue);
@@ -98,13 +106,15 @@ public class MainActivity extends AppCompatActivity {
 
         distanceView = (TextView)findViewById(R.id.distanceValue);
         lagView = (TextView)findViewById(R.id.lagValue);
+        compensationView = (TextView)findViewById(R.id.compensationValue);
+        compensatedDistanceView = (TextView)findViewById(R.id.compensatedDistanceValue);
     }
 
     private void initializeFirebase() {
 
         FirebaseDatabase database = FirebaseDatabase.getInstance();
 
-        String deviceId = "unknownAndroidSDKbuiltforx86-a7977c739bcfe84";//"unknownAndroidSDKbuiltforx86-a7977c739bcfe84";
+        String deviceId = "motorolaMotoG5-e8e76a185f1707ab";//"unknownAndroidSDKbuiltforx86-a7977c739bcfe84";
         String path = "tracked-devices/" + deviceId + "/tracks";
 
         DatabaseReference myRef = database.getReference(path);
@@ -169,31 +179,48 @@ public class MainActivity extends AppCompatActivity {
 
     private void doTheStuff() {
         LocationModel agentLocationModel = LocationStorage.getInstance().getLast();
+        Location agentLocation = null;
+        //float distance = 0.0F;
 
-        if(agentLocationModel != null && deviceLocation != null) {
-            Location agentLocation = LocationConverter2.toLocation(agentLocationModel);
-            float distance = deviceLocation.distanceTo(agentLocation);
-            float lagInMinutes = Math.abs((deviceLocation.getTime() - agentLocation.getTime()) / (float)1000 / (float)60);
-            Log.i("onLocationChanged", "Distance: " + distance);
-
+        if(agentLocationModel != null) {
+            agentLocation = LocationConverter2.toLocation(agentLocationModel);
             agentLatitudeView.setText(String.valueOf(agentLocation.getLatitude()));
             agentLongitudeView.setText(String.valueOf(agentLocation.getLongitude()));
             agentTimeView.setText(new Date(agentLocation.getTime()).toString());
-            agentSpeedView.setText(String.valueOf(agentLocation.getSpeed()));
+            agentSpeedView.setText(String.valueOf(agentLocation.getSpeed() * 3.6));
             agentProviderView.setText(String.valueOf(agentLocation.getProvider()));
             agentBearingView.setText(String.valueOf(agentLocation.getBearing()));
             agentAccuracyView.setText(String.valueOf(agentLocation.getAccuracy()));
+            agentParkedView.setText(String.valueOf(agentLocationModel.parked));
+        }
 
+        if(deviceLocation != null) {
             deviceLatitudeView.setText(String.valueOf(deviceLocation.getLatitude()));
             deviceLongitudeView.setText(String.valueOf(deviceLocation.getLongitude()));
             deviceTimeView.setText(new Date(deviceLocation.getTime()).toString());
-            deviceSpeedView.setText(String.valueOf(deviceLocation.getSpeed()));
+            deviceSpeedView.setText(String.valueOf(deviceLocation.getSpeed() * 3.6));
             deviceProviderView.setText(String.valueOf(deviceLocation.getProvider()));
             deviceBearingView.setText(String.valueOf(deviceLocation.getBearing()));
             deviceAccuracyView.setText(String.valueOf(deviceLocation.getAccuracy()));
+        }
+
+        if(agentLocationModel != null && deviceLocation != null) {
+            float distance = deviceLocation.distanceTo(agentLocation);
+            float lagInSeconds = Math.abs((deviceLocation.getTime() - agentLocation.getTime()) / (float)1000);
+            Log.i("onLocationChanged", "Distance: " + distance);
+
+            float estimatedDistanceCompensation = deviceLocation.getSpeed() * lagInSeconds;
+            float compensatedDistance = distance - estimatedDistanceCompensation - Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy());
 
             distanceView.setText(String.valueOf(distance));
-            lagView.setText(String.valueOf(lagInMinutes));
+            lagView.setText(String.valueOf(lagInSeconds));
+            compensationView.setText(String.valueOf(estimatedDistanceCompensation));
+            if(compensatedDistance >= 0){
+                compensatedDistanceView.setTextColor(Color.BLUE);
+            }else{
+                compensatedDistanceView.setTextColor(Color.RED);
+            }
+            compensatedDistanceView.setText(String.valueOf(compensatedDistance));
         }else{
             Log.i("doTheStuff", "Agent lastLocation or device location is null");
         }
