@@ -320,24 +320,25 @@ public class MainActivity extends Activity {
             SwitchToCantTransmitPackagesState();
         } else {
             SQLiteDatabase db = getDatabase();
-            // pega do mais recente para o mais antigo
-            Cursor resultSet = db.rawQuery(
-                    "SELECT id, data FROM Packages WHERE sent = 0 ORDER BY id DESC LIMIT " +
-                            TRANSMIT_OLD_STORED_LOCATION_PAK_LIMIT, null);
-            if (resultSet.moveToFirst()) {
-                do {
-                    String id = resultSet.getString(resultSet.getColumnIndex("id"));
-                    String jsonData = resultSet.getString(resultSet.getColumnIndex("data"));
-                    LocationDTO data = LocationConverter.fromJSON(jsonData);
-                    tryTransmitLocationPackage(id, data);
-                }
-                while (resultSet.moveToNext());
-            }
-            resultSet.close();
             try {
+                // pega do mais recente para o mais antigo
+                Cursor resultSet = db.rawQuery(
+                        "SELECT id, data FROM Packages WHERE sent = 0 ORDER BY id DESC LIMIT " +
+                                TRANSMIT_OLD_STORED_LOCATION_PAK_LIMIT, null);
+                if (resultSet.moveToFirst()) {
+                    do {
+                        String id = resultSet.getString(resultSet.getColumnIndex("id"));
+                        String jsonData = resultSet.getString(resultSet.getColumnIndex("data"));
+                        LocationDTO data = LocationConverter.fromJSON(jsonData);
+                        tryTransmitLocationPackage(id, data);
+                    }
+                    while (resultSet.moveToNext());
+                }
+                resultSet.close();
+
                 db.execSQL("DELETE FROM Packages WHERE sent = 1"); // limpa (localmente) os pacotes enviados
             }catch (IllegalStateException e){
-                Log.v("transmitOldStoredLoc", "DELETE old packages thrown IllegalStateException :/", e);
+                Log.v("transmitOldStoredLoc", "transmitOldStoredLocations thrown IllegalStateException :/", e);
             }
             db.close();
         }
