@@ -127,8 +127,9 @@ public class MainActivity extends AppCompatActivity {
     private void initializeFirebase() {
 
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-
-        String deviceId = "motorolaMotoG5-e8e76a185f1707ab";//"unknownAndroidSDKbuiltforx86-a7977c739bcfe84";
+        // motorolaMotoG5-e8e76a185f1707ab
+        // unknownAndroidSDKbuiltforx86-a7977c739bcfe84
+        String deviceId = "motorolaMotoG5-e8e76a185f1707ab";
         String path = "tracked-devices/" + deviceId + "/tracks";
 
         DatabaseReference myRef = database.getReference(path);
