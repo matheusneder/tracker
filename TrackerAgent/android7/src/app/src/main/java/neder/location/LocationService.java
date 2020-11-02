@@ -18,11 +18,13 @@ import neder.location.exception.NetworkNotEnabledException;
 
 public class LocationService implements LocationListener {
 
-    private static final long GPS_MIN_TIME = SharedConstants.GPS_MIN_TIME;
-    private static final float GPS_MIN_DISTANCE = 5F;
-    private static final long NETWORK_MIN_TIME = 50000;
-    private static final float NETWORK_MIN_DISTANCE = 50F;
-
+    private long gpsMinTime = Long.MAX_VALUE;// = SharedConstants.GPS_MIN_TIME;
+    //private static final float gpsMinDistance = 3F;
+    private static final long NETWORK_MIN_TIME = 1000;
+    private static final float NETWORK_MIN_DISTANCE = 3F;
+    public long getGpsMinTime() {
+        return gpsMinTime;
+    }
     // se receber update por network e o gps estiver sem resposta por tempo > q o definido nesta
     // constante (em milliseconds), atualiza com a localizacao do NETWORK
     private static final long UPDATE_WITH_NETWORK_GPS_TIMEOUT = 30000;
@@ -36,8 +38,9 @@ public class LocationService implements LocationListener {
         return location;
     }
 
-    public LocationService(Context context) throws GpsNotEnabledException, NetworkNotEnabledException {
+    public LocationService(Context context, long gpsMinTime, float gpsMinDistance) throws GpsNotEnabledException, NetworkNotEnabledException {
         this.context = context;
+        this.gpsMinTime = gpsMinTime;
         locationManager = (LocationManager) context
                 .getSystemService(Context.LOCATION_SERVICE);
         if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -50,7 +53,7 @@ public class LocationService implements LocationListener {
         if(location == null) {
             location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, GPS_MIN_TIME, GPS_MIN_DISTANCE, this);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, gpsMinTime, gpsMinDistance, this);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, NETWORK_MIN_TIME, NETWORK_MIN_DISTANCE, this);
     }
 
@@ -66,25 +69,10 @@ public class LocationService implements LocationListener {
     @Override
     public void onLocationChanged(Location location) {
         Log.v("LocationService", "onLocationChanged Triggered");
-        boolean acceptNewLocation = false;
-        // possuo uma localizacao anterior proveniente do gps (guardada em this.location) e
-        // estou recebendo uma nova localizacao por rede
-        if(this.location != null && this.location.getProvider().equals(LocationManager.GPS_PROVIDER) &&
-                location.getProvider().equals(LocationManager.NETWORK_PROVIDER))
-        {
-            // a localizacao por rede sera aceita (e atualizada) somente se o momento da utltima
-            // atualizacao tiver sido a mais do que UPDATE_WITH_NETWORK_GPS_TIMEOUT atras
-            if(System.currentTimeMillis() - UPDATE_WITH_NETWORK_GPS_TIMEOUT > this.location.getTime()) {
-                acceptNewLocation = true;
-            }
-        } else {
-            acceptNewLocation = true;
-        }
-        if(acceptNewLocation) {
-            this.location = location;
-            for (LocationChangeListener listener : locationChangeListeners) {
-                listener.onLocationChanged(location);
-            }
+        //location.setTime(System.currentTimeMillis()); // some tested devices has second precision insteadof milli
+        this.location = location;
+        for (LocationChangeListener listener : locationChangeListeners) {
+            listener.onLocationChanged(location);
         }
     }
 

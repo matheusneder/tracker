@@ -1,5 +1,7 @@
 package neder.trackerclient;
 
+import com.google.gson.Gson;
+
 import java.util.Date;
 
 public class LocationModel {

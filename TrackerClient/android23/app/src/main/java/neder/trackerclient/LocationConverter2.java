@@ -2,6 +2,8 @@ package neder.trackerclient;
 
 import android.location.Location;
 
+import com.google.gson.Gson;
+
 import java.time.Instant;
 import java.util.Date;
 import java.util.Dictionary;
@@ -103,5 +105,15 @@ public class LocationConverter2 {
         }
 
         return location;
+    }
+
+    private static Gson gson = new Gson();
+
+    public static String toJSON(LocationModel locationModel) {
+        return gson.toJson(locationModel);
+    }
+
+    public static LocationModel fromJson(String data) {
+        return gson.fromJson(data, LocationModel.class);
     }
 }

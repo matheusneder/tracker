@@ -10,12 +10,14 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
@@ -23,6 +25,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import neder.device.DeviceInfo;
+import neder.location.AuditLogger;
 import neder.location.LocationChangeListener;
 import neder.location.LocationConverter;
 import neder.location.LocationDTO;
@@ -34,6 +37,7 @@ import neder.net.firebase.FirebaseClient;
 import neder.net.firebase.exception.FirebaseClientException;
 
 import static neder.location.LocationConverter.toLocationDTO;
+import static neder.location.AuditLogger.l;
 
 public class MainActivity extends Activity {
 
@@ -58,6 +62,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AuditLogger.start(Environment.getExternalStorageDirectory().toString());
+        l("Service starting...");
         //initializeDatabase();
         setContentView(R.layout.activity_main);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -75,7 +81,7 @@ public class MainActivity extends Activity {
 
         try {
 
-            locationService = new LocationService(this);
+            locationService = new LocationService(this, SharedConstants.AGENT_GPS_MIN_TIME, SharedConstants.AGENT_GPS_MIN_DISTANCE);
 //
 //            //updateLocationView(toLocationDTO(locationService.getCurrentLocation()));
 //            Location currentLocation = locationService.getCurrentLocation();
@@ -86,6 +92,7 @@ public class MainActivity extends Activity {
             locationService.addLocationChangeListener(new LocationChangeListener() {
                 @Override
                 public void onLocationChanged(Location location) {
+                    l("Device location changed.", location);
                     handleNewLocation(location);
                 }
             });
@@ -103,7 +110,6 @@ public class MainActivity extends Activity {
     }
 
     private OldMessageLoopState oldMessageLoopState = OldMessageLoopState.STOPPED;
-
 
     private void wakeup() {
         if(oldMessageLoopState == OldMessageLoopState.STOPPED) {
@@ -180,15 +186,22 @@ public class MainActivity extends Activity {
 
     private Timer parkNotificationTimer = new Timer();
     private final Object lockPad = new Object();
+    private long logScopeId = 0;
+    private Object logScopeIdLockPad = new Object();
 
     private void handleNewLocation(Location location) {
+        synchronized (logScopeIdLockPad) {
+            logScopeId++;
+        }
+        l(logScopeId + "handleNewLocation: triggered");
         synchronized (lockPad) {
             parkNotificationTimer.cancel();
             parkNotificationTimer = new Timer();
-
+            l(logScopeId + "handleNewLocation: parkNotificationTimer canceled");
             locationUpdateCount++;
             locationUpdatesView.setText(Long.toString(locationUpdateCount));
             final LocationDTO locationDTO = toLocationDTO(location);
+            l(logScopeId + "handleNewLocation: calling storeAndTryTransmitLocationPackage", locationDTO);
             storeAndTryTransmitLocationPackage(locationDTO);
             updateLocationView(locationDTO);
             parkNotificationTimer.schedule(new TimerTask() {
@@ -202,10 +215,12 @@ public class MainActivity extends Activity {
                         parkedLocationDTO.speed = 0.0F;
                         parkedLocationDTO.originTime = locationDTO.time;
                         parkedLocationDTO.time = System.currentTimeMillis();
+                        l(logScopeId + "handleNewLocation: parkNotificationTimer triggered", parkedLocationDTO);
                         storeAndTryTransmitLocationPackage(parkedLocationDTO);
                     }
                 }
-            }, SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
+            }, locationService.getGpsMinTime() + SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
+            l(logScopeId + "handleNewLocation: parkNotificationTimer scheduled");
         }
     }
 
@@ -262,7 +277,9 @@ public class MainActivity extends Activity {
 
     private void tryTransmitLocationPackage(String id, LocationDTO data){
         if(tryTransmitLocationPackageFailCount < TRASMIT_FAILS_TO_STOP) {
+            l("tryTransmitLocationPackage: calling doTheTransmitionOfLocationPackageThroughCloud");
             if (doTheTransmitionOfLocationPackageThroughCloud(id, data)) {
+                l("tryTransmitLocationPackage: doTheTransmitionOfLocationPackageThroughCloud success");
                 tryTransmitLocationPackageFailCount = 0;
                 synchronized (dbLockPad) {
                     // marca o pacote como enviado no controle local
@@ -275,17 +292,21 @@ public class MainActivity extends Activity {
             } else {
                 tryTransmitLocationPackageFailCount++;
                 Log.e("MainActivity", "Fail to trasmit #" + tryTransmitLocationPackageFailCount);
+                l("tryTransmitLocationPackage: doTheTransmitionOfLocationPackageThroughCloud failed. Fail count: " + tryTransmitLocationPackageFailCount);
             }
         } else {
-            SwitchToCantTransmitPackagesState();
+            l("tryTransmitLocationPackage: calling SwitchToCantTransmitPackagesState");
+            switchToCantTransmitPackagesState();
         }
     }
 
-    private void SwitchToCantTransmitPackagesState() {
+    private void switchToCantTransmitPackagesState() {
         if(serviceState != ServiceState.CANT_TRANSMIT_PACKAGES){
-            Log.v("MainActivity", "mudando para estado sem conexao");
+            l("SwitchToCantTransmitPackagesState: Setting CANT_TRANSMIT_PACKAGES state");
             serviceState = ServiceState.CANT_TRANSMIT_PACKAGES;
+            l("SwitchToCantTransmitPackagesState: calling stopOldMessageLoop");
             stopOldMessageLoop();
+            l("SwitchToCantTransmitPackagesState: calling startConnectionCheckerTimer");
             startConnectionCheckerTimer();
         }
     }
@@ -300,8 +321,11 @@ public class MainActivity extends Activity {
                 try {
                     Log.v("MainActivity", "Verificando se ha conexao");
                     if(isNetworkAvailable()) {
+                        l("connectionCheckerHandler.postDelayed -> {}: Network AVAILABLE");
                         keepTring = false;
                         wakeup();
+                    }else{
+                        l("connectionCheckerHandler.postDelayed -> {}: Network UNavaileble");
                     }
                 } finally {
                     if(keepTring) {
@@ -323,8 +347,10 @@ public class MainActivity extends Activity {
         Log.v("MainActivity", "transmitOldStoredLocations called");
         if(tryTransmitLocationPackageFailCount >= TRASMIT_FAILS_TO_STOP) {
             Log.e("MainActivity", "transmitOldStoredLocations, tryTransmitLocationPackageFailCount = " + tryTransmitLocationPackageFailCount);
-            SwitchToCantTransmitPackagesState();
+            l("transmitOldStoredLocations: calling SwitchToCantTransmitPackagesState");
+            switchToCantTransmitPackagesState();
         } else {
+            l("transmitOldStoredLocations: reading stored locations to transmit");
             synchronized (dbLockPad) {
                 SQLiteDatabase db = getDatabase();
                 //try {
@@ -337,16 +363,17 @@ public class MainActivity extends Activity {
                         String id = resultSet.getString(resultSet.getColumnIndex("id"));
                         String jsonData = resultSet.getString(resultSet.getColumnIndex("data"));
                         LocationDTO data = LocationConverter.fromJSON(jsonData);
+                        l("transmitOldStoredLocations: calling tryTransmitLocationPackage (ID: " + id + ")", data);
                         tryTransmitLocationPackage(id, data);
                     }
                     while (resultSet.moveToNext());
                 }
                 resultSet.close();
-
-                db.execSQL("DELETE FROM Packages WHERE sent = 1"); // limpa (localmente) os pacotes enviados
-                //}catch (IllegalStateException e){
-                //    Log.v("transmitOldStoredLoc", "transmitOldStoredLocations thrown IllegalStateException :/", e);
-                //}
+                try {
+                    db.execSQL("DELETE FROM Packages WHERE sent = 1"); // limpa (localmente) os pacotes enviados
+                }catch (IllegalStateException e){
+                    Log.v("transmitOldStoredLoc", "transmitOldStoredLocations thrown IllegalStateException :/", e);
+                }
                 db.close();
             }
         }
@@ -367,10 +394,11 @@ public class MainActivity extends Activity {
             FirebaseClient client = new FirebaseClient(fbServiceUrl);
             String deviceIdPathSegment = (deviceInfo.getDeviceName() + "-" + deviceInfo.getDeviceId()).replaceAll("[^a-zA-Z0-9_-]", "");
             client.push("/tracked-devices/" + deviceIdPathSegment + "/tracks", locationPackage);
+            l("doTheTransmitionOfLocationPackageThroughCloud: transmited package successfuly");
             return true;
         }catch(FirebaseClientException e) {
-            Log.e("MainActivity", "FirebaseClientException thrown");
-            Log.getStackTraceString(e);
+            Log.e("MainActivity", "FirebaseClientException thrown", e);
+            l("doTheTransmitionOfLocationPackageThroughCloud: transmited package failed", e);
             return false;
         }
     }

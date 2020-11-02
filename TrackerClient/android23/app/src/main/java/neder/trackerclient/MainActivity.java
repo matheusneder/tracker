@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -17,12 +18,18 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import neder.location.LocationChangeListener;
+import neder.location.AuditLogger;
 import neder.location.LocationPackageDTO;
 import neder.location.LocationService;
+import neder.location.SharedConstants;
 import neder.location.exception.LocationException;
+import static neder.location.AuditLogger.l;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,18 +54,23 @@ public class MainActivity extends AppCompatActivity {
     private TextView lagView;
     private TextView compensationView;
     private TextView compensatedDistanceView;
+    private TextView potentialThefView;
 
     private Location deviceLocation = null;
+    private ArrayList<Location> deviceLocationHistory = new ArrayList<>();
+
+    private long startTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        startTime = System.currentTimeMillis();
         initializeFirebase();
-
+        AuditLogger.start(getExternalFilesDir(null).toString());
+        l("Service starting...");
         try {
 
-            LocationService locationService = new LocationService(this);
+            LocationService locationService = new LocationService(this, SharedConstants.CLIENT_GPS_MIN_TIME, SharedConstants.CLIENT_GPS_MIN_DISTANCE);
 //
 //            //updateLocationView(toLocationDTO(locationService.getCurrentLocation()));
 //            Location currentLocation = locationService.getCurrentLocation();
@@ -69,12 +81,13 @@ public class MainActivity extends AppCompatActivity {
 
             deviceLocation = locationService.getCurrentLocation();
 
-            locationService.addLocationChangeListener(new LocationChangeListener() {
-                @Override
-                public void onLocationChanged(Location location) {
-                    deviceLocation = location;
-                    doTheStuff();
+            locationService.addLocationChangeListener(location -> {
+                deviceLocation = location;
+                synchronized (deviceLocationHistoryLockPad) {
+                    deviceLocationHistory.add(location);
+                    l("Device location changed.", location);
                 }
+                performLocComp();
             });
 
             //startOldMessageLoop();
@@ -108,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         lagView = (TextView)findViewById(R.id.lagValue);
         compensationView = (TextView)findViewById(R.id.compensationValue);
         compensatedDistanceView = (TextView)findViewById(R.id.compensatedDistanceValue);
+        potentialThefView = (TextView)findViewById(R.id.potentialThefValue);
     }
 
     private void initializeFirebase() {
@@ -119,15 +133,17 @@ public class MainActivity extends AppCompatActivity {
 
         DatabaseReference myRef = database.getReference(path);
 
-        myRef.addChildEventListener(new ChildEventListener() {
+        myRef.limitToLast(1).addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 String key = snapshot.getKey();
                 LocationPackageDTO locationPackage = snapshot.getValue(LocationPackageDTO.class);
-                Log.i("onChildAdded", "key: " + key + "; " + LocationConverter2.toLogString(locationPackage));
+                l("Package received", locationPackage);
+                //Log.i("onChildAdded", "key: " + key + "; " + LocationConverter2.toLogString(locationPackage));
                 storeLocation(locationPackage);
-                doTheStuff();
+                performLocComp();
                 snapshot.getRef().removeValue();
+                removeOldDeviveLocationHistory(locationPackage.location.time);
             }
 
             @Override
@@ -177,11 +193,18 @@ public class MainActivity extends AppCompatActivity {
 //        });
     }
 
-    private void doTheStuff() {
-        LocationModel agentLocationModel = LocationStorage.getInstance().getLast();
-        Location agentLocation = null;
-        //float distance = 0.0F;
+    private long logScopeId = 0;
+    private Object logScopeIdLockPad = new Object();
 
+    private void performLocComp() {
+        synchronized (logScopeIdLockPad) {
+            logScopeId++;
+        }
+        l(logScopeId + "performLocComp triggered.");
+        LocationModel agentLocationModel = LocationStorage.getInstance(this).getLast();
+        Location agentLocation = null;
+        l(logScopeId + "performLocComp: agentLocationModel", agentLocationModel);
+        l(logScopeId + "performLocComp: deviceLocation", deviceLocation);
         if(agentLocationModel != null) {
             agentLocation = LocationConverter2.toLocation(agentLocationModel);
             agentLatitudeView.setText(String.valueOf(agentLocation.getLatitude()));
@@ -206,11 +229,17 @@ public class MainActivity extends AppCompatActivity {
 
         if(agentLocationModel != null && deviceLocation != null) {
             float distance = deviceLocation.distanceTo(agentLocation);
-            float lagInSeconds = Math.abs((deviceLocation.getTime() - agentLocation.getTime()) / (float)1000);
+            float lagInSeconds = Math.abs((float)(deviceLocation.getTime() - agentLocation.getTime()) / 1000.0F);
             Log.i("onLocationChanged", "Distance: " + distance);
 
-            float estimatedDistanceCompensation = deviceLocation.getSpeed() * lagInSeconds;
-            float compensatedDistance = distance - estimatedDistanceCompensation - Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy());
+            float deviceAvgSpeed = getDeviceAvgSpeedSince(agentLocation.getTime());
+            float estimatedDistanceCompensation = 0.0F;
+            if(!agentLocationModel.parked) {
+                estimatedDistanceCompensation = (deviceAvgSpeed * lagInSeconds) * 1.5F;
+            }
+            Log.i(logScopeId + "performLocComp", "estimatedDistanceCompensation: " + estimatedDistanceCompensation);
+            float compensatedDistance = distance - estimatedDistanceCompensation -
+                    Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy()) - SharedConstants.DISTANCE_TOLERANCE;
 
             distanceView.setText(String.valueOf(distance));
             lagView.setText(String.valueOf(lagInSeconds));
@@ -221,13 +250,84 @@ public class MainActivity extends AppCompatActivity {
                 compensatedDistanceView.setTextColor(Color.RED);
             }
             compensatedDistanceView.setText(String.valueOf(compensatedDistance));
+            l(logScopeId + "performLocComp: computed data", new AuditData(distance, lagInSeconds, deviceAvgSpeed, estimatedDistanceCompensation, compensatedDistance));
+            // the main rule
+            if(!agentLocationModel.parked && compensatedDistance > 0 && startTime + 5000 < System.currentTimeMillis()) {
+                l(logScopeId + "performLocComp: the condition has been met");
+                synchronized (incidenceReportTimerLockPad) {
+                    if (!incidenceReportTimerScheduled) {
+                        incidenceReportTimerScheduled = true;
+                        incidenceReportTimer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                synchronized (incidenceReportTimerLockPad) {
+                                    hlr.postDelayed(() -> {
+                                        l(logScopeId + "performLocComp: calling reportIncident");
+                                        reportIncident();
+                                    }, 500);
+                                }
+                            }
+                        }, SharedConstants.INCIDENT_REPORT_DELAY);
+                        l(logScopeId + "performLocComp: incidenceReportTimerScheduled");
+                    }
+                }
+            }else{
+                synchronized (incidenceReportTimerLockPad) {
+                    incidenceReportTimer.cancel();
+                    incidenceReportTimer = new Timer();
+                    incidenceReportTimerScheduled = false;
+                    l(logScopeId + "performLocComp: incidenceReportTimerCanceled");
+                }
+            }
         }else{
-            Log.i("doTheStuff", "Agent lastLocation or device location is null");
+            l(logScopeId + "performLocComp: Agent lastLocation or device location is null");
+        }
+    }
+
+    private Handler hlr = new Handler();
+
+    private void reportIncident() {
+
+        potentialThefView.setTextColor(Color.RED);
+        potentialThefView.setText(String.valueOf(true));
+    }
+
+    private Object incidenceReportTimerLockPad = new Object();
+    private Timer incidenceReportTimer = new Timer();
+    private  boolean incidenceReportTimerScheduled = false;
+
+    private Object deviceLocationHistoryLockPad = new Object();
+
+    private float getDeviceAvgSpeedSince(long time) {
+        float acc = 0.0F;
+        int count = 0;
+        synchronized (deviceLocationHistoryLockPad) {
+            for (Location deviceLocation : deviceLocationHistory) {
+                if (deviceLocation.getTime() >= time) {
+                    acc += deviceLocation.getSpeed();
+                    count++;
+                }
+            }
+        }
+        if(count > 0)
+            return acc / (float)count;
+        return 0.0F;
+    }
+
+    private void removeOldDeviveLocationHistory(long time) {
+        ArrayList<Location> newDeviceLocationHistory = new ArrayList<>();
+        synchronized (deviceLocationHistoryLockPad) {
+            for (Location deviceLocation : deviceLocationHistory) {
+                if (deviceLocation.getTime() >= time) {
+                    newDeviceLocationHistory.add(deviceLocation);
+                }
+            }
+            deviceLocationHistory = newDeviceLocationHistory;
         }
     }
 
     private void storeLocation(LocationPackageDTO locationPackage) {
-        LocationStorage store = LocationStorage.getInstance();
+        LocationStorage store = LocationStorage.getInstance(this);
         store.add(LocationConverter2.toLocationModel(locationPackage));
     }
 }
