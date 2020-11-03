@@ -37,7 +37,7 @@ public class LocationConverter2 {
         return locationModel;
     }
 
-    private static LocationProvider toLocationProvider(String provider) {
+    public static LocationProvider toLocationProvider(String provider) {
         switch (provider){
             case "gps":
                 return LocationProvider.GPS;

@@ -64,15 +64,21 @@ public class LocationStorage {
     public boolean add(LocationModel locationModel) {
         boolean isANewerLocation = false;
         if (lastLocation == null) {
-            l("NEW LOCATION STORED: lastLocation was null, storing the new location.");
+            l("NEW LOCATION STORED: lastLocation is null, storing the new location.", locationModel);
             lastLocation = locationModel;
             isANewerLocation = true;
-        }else if(locationModel.time.after(lastLocation.time)){
-            l("NEW LOCATION STORED: lastLocation was older than provided one, storing the new location.");
+        }else if(locationModel.time.after(lastLocation.time) && SharedLogic.useNewLocation(
+                locationModel.provider,
+                locationModel.accuracy,
+                lastLocation.accuracy,
+                locationModel.time.getTime(),
+                lastLocation.time.getTime()))
+        {
+            l("NEW LOCATION STORED: lastLocation is older than provided one AND SharedLogic.useNewLocation is true, storing the new location.", locationModel);
             lastLocation = locationModel;
             isANewerLocation = true;
         }else{
-            l("NEW LOCATION REJECTED: lastLocation was newer than provided one, rejecting the new location.");
+            l("NEW LOCATION REJECTED: lastLocation is newer than provided one or SharedLogic.useNewLocation is false, rejecting the new location.", locationModel);
         }
         synchronized (dbLockPad) {
             SQLiteDatabase db = getDatabase();

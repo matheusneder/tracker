@@ -82,12 +82,23 @@ public class MainActivity extends AppCompatActivity {
             deviceLocation = locationService.getCurrentLocation();
 
             locationService.addLocationChangeListener(location -> {
-                deviceLocation = location;
-                synchronized (deviceLocationHistoryLockPad) {
-                    deviceLocationHistory.add(location);
-                    l("Device location changed.", location);
+                l("Device location changed (" + location.getTime() + ")", location);
+
+                if(deviceLocation == null || SharedLogic.useNewLocation(
+                        LocationConverter2.toLocationProvider(location.getProvider()),
+                        location.getAccuracy(),
+                        deviceLocation.getAccuracy(),
+                        location.getTime(),
+                        deviceLocation.getTime()))
+                {
+                    deviceLocation = location;
+                    performLocComp();
+                    synchronized (deviceLocationHistoryLockPad) {
+                        deviceLocationHistory.add(location);
+                    }
+                } else {
+                    l("New location REJECTED (" + location.getTime() + ")");
                 }
-                performLocComp();
             });
 
             //startOldMessageLoop();
