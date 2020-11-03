@@ -31,6 +31,7 @@ import neder.location.LocationConverter;
 import neder.location.LocationDTO;
 import neder.location.LocationPackageDTO;
 import neder.location.SharedConstants;
+import neder.location.Util;
 import neder.location.exception.LocationException;
 import neder.location.LocationService;
 import neder.net.firebase.FirebaseClient;
@@ -186,41 +187,37 @@ public class MainActivity extends Activity {
 
     private Timer parkNotificationTimer = new Timer();
     private final Object lockPad = new Object();
-    private long logScopeId = 0;
-    private Object logScopeIdLockPad = new Object();
 
     private void handleNewLocation(Location location) {
-        synchronized (logScopeIdLockPad) {
-            final long logScopeId = this.logScopeId++;
-            l(logScopeId + "handleNewLocation: triggered");
-            synchronized (lockPad) {
-                parkNotificationTimer.cancel();
-                parkNotificationTimer = new Timer();
-                l(logScopeId + "handleNewLocation: parkNotificationTimer canceled");
-                locationUpdateCount++;
-                locationUpdatesView.setText(Long.toString(locationUpdateCount));
-                final LocationDTO locationDTO = toLocationDTO(location);
-                l(logScopeId + "handleNewLocation: calling storeAndTryTransmitLocationPackage", locationDTO);
-                storeAndTryTransmitLocationPackage(locationDTO);
-                updateLocationView(locationDTO);
-                parkNotificationTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        synchronized (lockPad) {
-                            Log.v("handleNewLocation:timer", "parkNotificationTimer fired!");
-                            LocationDTO parkedLocationDTO = locationDTO.clone();
-                            parkedLocationDTO.parked = true;
-                            parkedLocationDTO.originSpeed = locationDTO.speed;
-                            parkedLocationDTO.speed = 0.0F;
-                            parkedLocationDTO.originTime = locationDTO.time;
-                            parkedLocationDTO.time = System.currentTimeMillis();
-                            l(logScopeId + "handleNewLocation: parkNotificationTimer triggered", parkedLocationDTO);
-                            storeAndTryTransmitLocationPackage(parkedLocationDTO);
-                        }
+        final String logScopeId = Util.generateSequentialUniqueId();
+        l(logScopeId + " handleNewLocation: triggered");
+        synchronized (lockPad) {
+            parkNotificationTimer.cancel();
+            parkNotificationTimer = new Timer();
+            l(logScopeId + " handleNewLocation: parkNotificationTimer canceled");
+            locationUpdateCount++;
+            locationUpdatesView.setText(Long.toString(locationUpdateCount));
+            final LocationDTO locationDTO = toLocationDTO(location);
+            l(logScopeId + " handleNewLocation: calling storeAndTryTransmitLocationPackage", locationDTO);
+            storeAndTryTransmitLocationPackage(locationDTO);
+            updateLocationView(locationDTO);
+            parkNotificationTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (lockPad) {
+                        Log.v("handleNewLocation:timer", "parkNotificationTimer fired!");
+                        LocationDTO parkedLocationDTO = locationDTO.clone();
+                        parkedLocationDTO.parked = true;
+                        parkedLocationDTO.originSpeed = locationDTO.speed;
+                        parkedLocationDTO.speed = 0.0F;
+                        parkedLocationDTO.originTime = locationDTO.time;
+                        parkedLocationDTO.time = System.currentTimeMillis();
+                        l(logScopeId + " handleNewLocation: parkNotificationTimer triggered", parkedLocationDTO);
+                        storeAndTryTransmitLocationPackage(parkedLocationDTO);
                     }
-                }, locationService.getGpsMinTime() + SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
-                l(logScopeId + "handleNewLocation: parkNotificationTimer scheduled");
-            }
+                }
+            }, locationService.getGpsMinTime() + SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
+            l(logScopeId + " handleNewLocation: parkNotificationTimer scheduled");
         }
     }
 
@@ -241,16 +238,6 @@ public class MainActivity extends Activity {
         return db;
     }
 
-    private int sequenceForPackageIds = 0;
-    private Random randomGeneratorForPackageIds = new Random();
-
-    private String generateSequentialUniqueId() {
-        String time = String.format("%016X", System.currentTimeMillis());
-        String seq  = String.format("%08X", sequenceForPackageIds++);
-        String rand = String.format("%08X", randomGeneratorForPackageIds.nextInt());
-        return time + "-" + seq + "-" + rand;
-    }
-
     private Object dbLockPad = new Object();
 
     /**
@@ -259,7 +246,7 @@ public class MainActivity extends Activity {
      * @return the unique identifier
      */
     private String storeLocation(LocationDTO locationDTO) {
-        String id = generateSequentialUniqueId();
+        String id = Util.generateSequentialUniqueId();
         LocationDTO storedLocationDTO = locationDTO.clone();
         synchronized (dbLockPad) {
             SQLiteDatabase db = getDatabase();
