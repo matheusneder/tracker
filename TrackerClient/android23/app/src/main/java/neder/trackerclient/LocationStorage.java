@@ -57,17 +57,23 @@ public class LocationStorage {
 
     private Object dbLockPad = new Object();
 
-    public void add(LocationModel locationModel) {
+    /**
+     * @param locationModel
+     * @return returns false if the locationPackage is older than the lastKnowedLocation or true otherwise
+     */
+    public boolean add(LocationModel locationModel) {
+        boolean isANewerLocation = false;
         if (lastLocation == null) {
             l("NEW LOCATION STORED: lastLocation was null, storing the new location.");
             lastLocation = locationModel;
+            isANewerLocation = true;
         }else if(locationModel.time.after(lastLocation.time)){
             l("NEW LOCATION STORED: lastLocation was older than provided one, storing the new location.");
             lastLocation = locationModel;
+            isANewerLocation = true;
         }else{
             l("NEW LOCATION REJECTED: lastLocation was newer than provided one, rejecting the new location.");
         }
-
         synchronized (dbLockPad) {
             SQLiteDatabase db = getDatabase();
             db.execSQL("DELETE FROM AgentLocations WHERE time < " + (System.currentTimeMillis() - 60000));
@@ -82,6 +88,7 @@ public class LocationStorage {
             }
             db.close();
         }
+        return isANewerLocation;
     }
 
     public LocationModel getLast() {

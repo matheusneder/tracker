@@ -41,9 +41,9 @@ import static neder.location.AuditLogger.l;
 
 public class MainActivity extends Activity {
 
-    private static final long DELAY_TO_START_TRANSMITING_OLD_LOCATIONS = 10000;
-    private static final long INTERVAL_TO_RETRY_TO_TRANSMIT_OLD_LOCATION = 30000;
-    private static final long TRANSMIT_OLD_STORED_LOCATION_PAK_LIMIT = 100;
+    private static final long DELAY_TO_START_TRANSMITING_OLD_LOCATIONS = 5000;
+    private static final long INTERVAL_TO_RETRY_TO_TRANSMIT_OLD_LOCATION = 5000;
+    private static final long TRANSMIT_OLD_STORED_LOCATION_PAK_LIMIT = 5;
     private static final long TRASMIT_FAILS_TO_STOP = 4;
     private TextView latitudeView;
     private TextView longitudeView;
@@ -191,36 +191,36 @@ public class MainActivity extends Activity {
 
     private void handleNewLocation(Location location) {
         synchronized (logScopeIdLockPad) {
-            logScopeId++;
-        }
-        l(logScopeId + "handleNewLocation: triggered");
-        synchronized (lockPad) {
-            parkNotificationTimer.cancel();
-            parkNotificationTimer = new Timer();
-            l(logScopeId + "handleNewLocation: parkNotificationTimer canceled");
-            locationUpdateCount++;
-            locationUpdatesView.setText(Long.toString(locationUpdateCount));
-            final LocationDTO locationDTO = toLocationDTO(location);
-            l(logScopeId + "handleNewLocation: calling storeAndTryTransmitLocationPackage", locationDTO);
-            storeAndTryTransmitLocationPackage(locationDTO);
-            updateLocationView(locationDTO);
-            parkNotificationTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    synchronized (lockPad) {
-                        Log.v("handleNewLocation:timer", "parkNotificationTimer fired!");
-                        LocationDTO parkedLocationDTO = locationDTO.clone();
-                        parkedLocationDTO.parked = true;
-                        parkedLocationDTO.originSpeed = locationDTO.speed;
-                        parkedLocationDTO.speed = 0.0F;
-                        parkedLocationDTO.originTime = locationDTO.time;
-                        parkedLocationDTO.time = System.currentTimeMillis();
-                        l(logScopeId + "handleNewLocation: parkNotificationTimer triggered", parkedLocationDTO);
-                        storeAndTryTransmitLocationPackage(parkedLocationDTO);
+            final long logScopeId = this.logScopeId++;
+            l(logScopeId + "handleNewLocation: triggered");
+            synchronized (lockPad) {
+                parkNotificationTimer.cancel();
+                parkNotificationTimer = new Timer();
+                l(logScopeId + "handleNewLocation: parkNotificationTimer canceled");
+                locationUpdateCount++;
+                locationUpdatesView.setText(Long.toString(locationUpdateCount));
+                final LocationDTO locationDTO = toLocationDTO(location);
+                l(logScopeId + "handleNewLocation: calling storeAndTryTransmitLocationPackage", locationDTO);
+                storeAndTryTransmitLocationPackage(locationDTO);
+                updateLocationView(locationDTO);
+                parkNotificationTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        synchronized (lockPad) {
+                            Log.v("handleNewLocation:timer", "parkNotificationTimer fired!");
+                            LocationDTO parkedLocationDTO = locationDTO.clone();
+                            parkedLocationDTO.parked = true;
+                            parkedLocationDTO.originSpeed = locationDTO.speed;
+                            parkedLocationDTO.speed = 0.0F;
+                            parkedLocationDTO.originTime = locationDTO.time;
+                            parkedLocationDTO.time = System.currentTimeMillis();
+                            l(logScopeId + "handleNewLocation: parkNotificationTimer triggered", parkedLocationDTO);
+                            storeAndTryTransmitLocationPackage(parkedLocationDTO);
+                        }
                     }
-                }
-            }, locationService.getGpsMinTime() + SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
-            l(logScopeId + "handleNewLocation: parkNotificationTimer scheduled");
+                }, locationService.getGpsMinTime() + SharedConstants.PARKED_TIMER_DELAY, SharedConstants.PARKED_TIMER_INTERVAL);
+                l(logScopeId + "handleNewLocation: parkNotificationTimer scheduled");
+            }
         }
     }
 

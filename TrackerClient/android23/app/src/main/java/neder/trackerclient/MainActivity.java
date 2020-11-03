@@ -140,11 +140,14 @@ public class MainActivity extends AppCompatActivity {
                 String key = snapshot.getKey();
                 LocationPackageDTO locationPackage = snapshot.getValue(LocationPackageDTO.class);
                 l("Package received", locationPackage);
-                //Log.i("onChildAdded", "key: " + key + "; " + LocationConverter2.toLogString(locationPackage));
-                storeLocation(locationPackage);
-                performLocComp();
+
+                // NOTE: storeLocation returns false if the locationPackage is older than the
+                // last known agent location (it will be stored anyway -or- an exception will be thrown)
+                if(storeLocation(locationPackage)) {
+                    performLocComp();
+                    removeOldDeviveLocationHistory(locationPackage.location.time);
+                }
                 snapshot.getRef().removeValue();
-                removeOldDeviveLocationHistory(locationPackage.location.time);
             }
 
             @Override
@@ -199,89 +202,90 @@ public class MainActivity extends AppCompatActivity {
 
     private void performLocComp() {
         synchronized (logScopeIdLockPad) {
-            logScopeId++;
-        }
-        l(logScopeId + "performLocComp triggered.");
-        LocationModel agentLocationModel = LocationStorage.getInstance(this).getLast();
-        Location agentLocation = null;
-        l(logScopeId + "performLocComp: agentLocationModel", agentLocationModel);
-        l(logScopeId + "performLocComp: deviceLocation", deviceLocation);
-        if(agentLocationModel != null) {
-            agentLocation = LocationConverter2.toLocation(agentLocationModel);
-            agentLatitudeView.setText(String.valueOf(agentLocation.getLatitude()));
-            agentLongitudeView.setText(String.valueOf(agentLocation.getLongitude()));
-            agentTimeView.setText(new Date(agentLocation.getTime()).toString());
-            agentSpeedView.setText(String.valueOf(agentLocation.getSpeed() * 3.6));
-            agentProviderView.setText(String.valueOf(agentLocation.getProvider()));
-            agentBearingView.setText(String.valueOf(agentLocation.getBearing()));
-            agentAccuracyView.setText(String.valueOf(agentLocation.getAccuracy()));
-            agentParkedView.setText(String.valueOf(agentLocationModel.parked));
-        }
-
-        if(deviceLocation != null) {
-            deviceLatitudeView.setText(String.valueOf(deviceLocation.getLatitude()));
-            deviceLongitudeView.setText(String.valueOf(deviceLocation.getLongitude()));
-            deviceTimeView.setText(new Date(deviceLocation.getTime()).toString());
-            deviceSpeedView.setText(String.valueOf(deviceLocation.getSpeed() * 3.6));
-            deviceProviderView.setText(String.valueOf(deviceLocation.getProvider()));
-            deviceBearingView.setText(String.valueOf(deviceLocation.getBearing()));
-            deviceAccuracyView.setText(String.valueOf(deviceLocation.getAccuracy()));
-        }
-
-        if(agentLocationModel != null && deviceLocation != null) {
-            float distance = deviceLocation.distanceTo(agentLocation);
-            float lagInSeconds = Math.abs((float)(deviceLocation.getTime() - agentLocation.getTime()) / 1000.0F);
-            Log.i("onLocationChanged", "Distance: " + distance);
-
-            float deviceAvgSpeed = getDeviceAvgSpeedSince(agentLocation.getTime());
-            float estimatedDistanceCompensation = 0.0F;
-            if(!agentLocationModel.parked) {
-                estimatedDistanceCompensation = (deviceAvgSpeed * lagInSeconds) * 1.5F;
+            final long logScopeId = this.logScopeId++;
+            l(logScopeId + "performLocComp triggered.");
+            LocationModel agentLocationModel = LocationStorage.getInstance(this).getLast();
+            Location agentLocation = null;
+            Location deviceLocation = this.deviceLocation;
+            l(logScopeId + "performLocComp: agentLocationModel", agentLocationModel);
+            l(logScopeId + "performLocComp: deviceLocation", deviceLocation);
+            if (agentLocationModel != null) {
+                agentLocation = LocationConverter2.toLocation(agentLocationModel);
+                agentLatitudeView.setText(String.valueOf(agentLocation.getLatitude()));
+                agentLongitudeView.setText(String.valueOf(agentLocation.getLongitude()));
+                agentTimeView.setText(new Date(agentLocation.getTime()).toString());
+                agentSpeedView.setText(String.valueOf(agentLocation.getSpeed() * 3.6));
+                agentProviderView.setText(String.valueOf(agentLocation.getProvider()));
+                agentBearingView.setText(String.valueOf(agentLocation.getBearing()));
+                agentAccuracyView.setText(String.valueOf(agentLocation.getAccuracy()));
+                agentParkedView.setText(String.valueOf(agentLocationModel.parked));
             }
-            Log.i(logScopeId + "performLocComp", "estimatedDistanceCompensation: " + estimatedDistanceCompensation);
-            float compensatedDistance = distance - estimatedDistanceCompensation -
-                    Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy()) - SharedConstants.DISTANCE_TOLERANCE;
 
-            distanceView.setText(String.valueOf(distance));
-            lagView.setText(String.valueOf(lagInSeconds));
-            compensationView.setText(String.valueOf(estimatedDistanceCompensation));
-            if(compensatedDistance >= 0){
-                compensatedDistanceView.setTextColor(Color.BLUE);
-            }else{
-                compensatedDistanceView.setTextColor(Color.RED);
+            if (deviceLocation != null) {
+                deviceLatitudeView.setText(String.valueOf(deviceLocation.getLatitude()));
+                deviceLongitudeView.setText(String.valueOf(deviceLocation.getLongitude()));
+                deviceTimeView.setText(new Date(deviceLocation.getTime()).toString());
+                deviceSpeedView.setText(String.valueOf(deviceLocation.getSpeed() * 3.6));
+                deviceProviderView.setText(String.valueOf(deviceLocation.getProvider()));
+                deviceBearingView.setText(String.valueOf(deviceLocation.getBearing()));
+                deviceAccuracyView.setText(String.valueOf(deviceLocation.getAccuracy()));
             }
-            compensatedDistanceView.setText(String.valueOf(compensatedDistance));
-            l(logScopeId + "performLocComp: computed data", new AuditData(distance, lagInSeconds, deviceAvgSpeed, estimatedDistanceCompensation, compensatedDistance));
-            // the main rule
-            if(!agentLocationModel.parked && compensatedDistance > 0 && startTime + 5000 < System.currentTimeMillis()) {
-                l(logScopeId + "performLocComp: the condition has been met");
-                synchronized (incidenceReportTimerLockPad) {
-                    if (!incidenceReportTimerScheduled) {
-                        incidenceReportTimerScheduled = true;
-                        incidenceReportTimer.schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                synchronized (incidenceReportTimerLockPad) {
-                                    hlr.postDelayed(() -> {
-                                        l(logScopeId + "performLocComp: calling reportIncident");
-                                        reportIncident();
-                                    }, 500);
+
+            if (agentLocationModel != null && deviceLocation != null) {
+                float distance = deviceLocation.distanceTo(agentLocation);
+                float lagInSeconds = Math.abs((float) (deviceLocation.getTime() - agentLocation.getTime()) / 1000.0F);
+                Log.i("onLocationChanged", "Distance: " + distance);
+
+                float deviceAvgSpeed = getDeviceAvgSpeedSince(agentLocation.getTime());
+                float estimatedDistanceCompensation = 0.0F;
+                if (!agentLocationModel.parked) {
+                    estimatedDistanceCompensation = (deviceAvgSpeed * lagInSeconds) * 1.5F;
+                }
+                Log.i(logScopeId + "performLocComp", "estimatedDistanceCompensation: " + estimatedDistanceCompensation);
+                float compensatedDistance = distance - estimatedDistanceCompensation -
+                        Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy()) - SharedConstants.DISTANCE_TOLERANCE;
+
+                distanceView.setText(String.valueOf(distance));
+                lagView.setText(String.valueOf(lagInSeconds));
+                compensationView.setText(String.valueOf(estimatedDistanceCompensation));
+                if (compensatedDistance >= 0) {
+                    compensatedDistanceView.setTextColor(Color.BLUE);
+                } else {
+                    compensatedDistanceView.setTextColor(Color.RED);
+                }
+                compensatedDistanceView.setText(String.valueOf(compensatedDistance));
+                l(logScopeId + "performLocComp: computed data", new AuditData(distance, lagInSeconds, deviceAvgSpeed, estimatedDistanceCompensation, compensatedDistance));
+                // the main rule
+                if (!agentLocationModel.parked && compensatedDistance > 0 && startTime + 5000 < System.currentTimeMillis()) {
+                    l(logScopeId + "performLocComp: the condition has been met");
+                    synchronized (incidenceReportTimerLockPad) {
+                        if (!incidenceReportTimerScheduled) {
+                            incidenceReportTimerScheduled = true;
+                            incidenceReportTimer.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    synchronized (incidenceReportTimerLockPad) {
+                                        hlr.postDelayed(() -> {
+                                            l(logScopeId + "performLocComp: calling reportIncident");
+                                            reportIncident();
+                                        }, 500);
+                                    }
                                 }
-                            }
-                        }, SharedConstants.INCIDENT_REPORT_DELAY);
-                        l(logScopeId + "performLocComp: incidenceReportTimerScheduled");
+                            }, SharedConstants.INCIDENT_REPORT_DELAY);
+                            l(logScopeId + "performLocComp: incidenceReportTimerScheduled");
+                        }
+                    }
+                } else {
+                    synchronized (incidenceReportTimerLockPad) {
+                        incidenceReportTimer.cancel();
+                        incidenceReportTimer = new Timer();
+                        incidenceReportTimerScheduled = false;
+                        l(logScopeId + "performLocComp: incidenceReportTimerCanceled");
                     }
                 }
-            }else{
-                synchronized (incidenceReportTimerLockPad) {
-                    incidenceReportTimer.cancel();
-                    incidenceReportTimer = new Timer();
-                    incidenceReportTimerScheduled = false;
-                    l(logScopeId + "performLocComp: incidenceReportTimerCanceled");
-                }
+            } else {
+                l(logScopeId + "performLocComp: Agent lastLocation or device location is null");
             }
-        }else{
-            l(logScopeId + "performLocComp: Agent lastLocation or device location is null");
         }
     }
 
@@ -327,8 +331,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void storeLocation(LocationPackageDTO locationPackage) {
+    /**
+     *
+     * @param locationPackage
+     * @return returns false if the locationPackage is older than the lastKnowedLocation or true otherwise
+     */
+    private boolean storeLocation(LocationPackageDTO locationPackage) {
         LocationStorage store = LocationStorage.getInstance(this);
-        store.add(LocationConverter2.toLocationModel(locationPackage));
+        return store.add(LocationConverter2.toLocationModel(locationPackage));
     }
 }
