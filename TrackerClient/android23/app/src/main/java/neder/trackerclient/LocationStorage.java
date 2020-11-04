@@ -69,6 +69,7 @@ public class LocationStorage {
             isANewerLocation = true;
         }else if(locationModel.time.after(lastLocation.time) && SharedLogic.useNewLocation(
                 locationModel.provider,
+                lastLocation.provider,
                 locationModel.accuracy,
                 lastLocation.accuracy,
                 locationModel.time.getTime(),

@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if(deviceLocation == null || SharedLogic.useNewLocation(
                         LocationConverter2.toLocationProvider(location.getProvider()),
+                        LocationConverter2.toLocationProvider(deviceLocation.getProvider()),
                         location.getAccuracy(),
                         deviceLocation.getAccuracy(),
                         location.getTime(),
