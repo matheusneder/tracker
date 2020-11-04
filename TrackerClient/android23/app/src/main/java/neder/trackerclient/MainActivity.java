@@ -25,6 +25,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import neder.location.AuditLogger;
+import neder.location.LocationConverter;
 import neder.location.LocationPackageDTO;
 import neder.location.LocationService;
 import neder.location.SharedConstants;
@@ -250,8 +251,15 @@ public class MainActivity extends AppCompatActivity {
                 estimatedDistanceCompensation = (deviceAvgSpeed * lagInSeconds) * 1.5F;
             }
             Log.i(logScopeId + " performLocComp", "estimatedDistanceCompensation: " + estimatedDistanceCompensation);
+            float accuracy = Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy());
+            LocationProvider deviceLocationProvider = LocationConverter2.toLocationProvider(deviceLocation.getProvider());
+            if(deviceLocationProvider == LocationProvider.NETWORK || deviceLocationProvider == LocationProvider.STORED_NETWORK
+                || agentLocationModel.provider == LocationProvider.NETWORK || agentLocationModel.provider == LocationProvider.STORED_NETWORK)
+            {
+                accuracy = Math.max(accuracy, 222);
+            }
             float compensatedDistance = distance - estimatedDistanceCompensation -
-                    Math.max(agentLocation.getAccuracy(), deviceLocation.getAccuracy()) - SharedConstants.DISTANCE_TOLERANCE;
+                    accuracy - SharedConstants.DISTANCE_TOLERANCE;
 
             distanceView.setText(String.valueOf(distance));
             lagView.setText(String.valueOf(lagInSeconds));
